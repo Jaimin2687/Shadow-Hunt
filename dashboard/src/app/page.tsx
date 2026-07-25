@@ -25,8 +25,10 @@ export default function Dashboard() {
       department: selectedActor.department,
       role: selectedActor.role,
       current_risk: 10.0,
+      peak_risk: 10.0,
       risk_history: [10.0],
       anomaly_count: 0,
+      last_event_time: Date.now(),
       is_isolated: false,
       active_alerts: []
     }
