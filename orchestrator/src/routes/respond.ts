@@ -28,7 +28,7 @@ export function createRespondRouter(soarDispatcher: SoarDispatcher) {
       const body = parsed.data;
 
       const action: SoarAction = {
-        action: body.action,
+        action: body.action as SoarAction['action'],
         target_user_id: body.target_user_id,
         analyst_note: body.analyst_note || 'Manual trigger from dashboard'
       };

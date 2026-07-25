@@ -84,3 +84,9 @@ export interface SoarAction {
   target_user_id: string;
   analyst_note?: string;
 }
+
+export interface SoarResult {
+  success: boolean;
+  message: string;
+  userState?: UserRiskState;
+}
