@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useKeepAlive } from '@/hooks/useKeepAlive';
 import { api } from '@/lib/api';
 import { LiveFeed } from '@/components/LiveFeed';
 import { RiskLeaderboard } from '@/components/RiskLeaderboard';
@@ -13,6 +14,7 @@ import { Shield, Activity } from 'lucide-react';
 import { UserRiskState } from '@/types/events';
 
 export default function Dashboard() {
+  useKeepAlive(); // Keep Render free-tier services alive
   const { events, totalEventsCount, riskUpdates, alerts, latencyStats, isConnected } = useWebSocket();
   const [selectedActor, setSelectedActor] = useState<{ user_id: string; username: string; department: string; role: string } | null>(null);
   const [isSimulationStopped, setIsSimulationStopped] = useState(false);
