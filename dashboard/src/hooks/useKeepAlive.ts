@@ -1,9 +1,11 @@
 'use client';
 import { useEffect, useRef } from 'react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-const SCENARIO_API_URL = process.env.NEXT_PUBLIC_SCENARIO_API_URL || 'http://localhost:5555';
-const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8000';
+const isLocal = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || (isLocal ? 'http://localhost:4000' : 'https://shadow-hunt-orchestrator.onrender.com');
+const SCENARIO_API_URL = process.env.NEXT_PUBLIC_SCENARIO_API_URL || (isLocal ? 'http://localhost:5555' : 'https://shadow-hunt-simulator.onrender.com');
+// Note: Engine is currently merged with orchestrator in standard deployment, but keeping URL fallback for safety
+const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || (isLocal ? 'http://localhost:8000' : 'https://shadow-hunt-orchestrator.onrender.com');
 
 // Ping interval: 4 minutes (Render free tier sleeps after 15 min inactivity)
 const PING_INTERVAL_MS = 4 * 60 * 1000;
