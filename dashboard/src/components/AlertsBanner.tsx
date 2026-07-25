@@ -43,8 +43,6 @@ export function AlertsBanner({ alerts, riskUpdates, onSelectUser }: AlertsBanner
 
   if (alerts.length === 0) return null;
 
-  const recent = alerts.slice(0, 4);
-
   const handleRowClick = (alertMsg: string) => {
     // Extract username (usually first word before space or department parenthesis)
     const usernameMatch = alertMsg.match(/^([a-zA-Z0-9._-]+)/);
@@ -109,8 +107,8 @@ export function AlertsBanner({ alerts, riskUpdates, onSelectUser }: AlertsBanner
   };
 
   return (
-    <div className="flex flex-col gap-2 w-full max-w-4xl mx-auto mt-4">
-      {recent.map((alert, idx) => {
+    <div className="flex flex-col gap-2 w-full max-w-4xl mx-auto mt-4 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+      {alerts.map((alert, idx) => {
         const Icon = SEVERITY_ICONS[alert.severity] || Info;
         const actionConfig = getActionConfig(alert.message);
         const ActionIcon = actionConfig.icon;
