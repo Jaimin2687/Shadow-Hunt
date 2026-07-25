@@ -160,7 +160,7 @@ async def normal_traffic_loop():
             await send_event(event)
 
 # CORS Middleware
-ALLOWED_ORIGIN = os.getenv('DASHBOARD_URL', 'http://localhost:3000')
+ALLOWED_ORIGINS = [o.strip() for o in os.getenv('DASHBOARD_URL', 'http://localhost:3000').split(',')]
 
 @web.middleware
 async def cors_middleware(request, handler):
@@ -173,7 +173,7 @@ async def cors_middleware(request, handler):
             response = ex
             
     origin = request.headers.get('Origin', '')
-    if origin == ALLOWED_ORIGIN:
+    if origin in ALLOWED_ORIGINS:
         response.headers['Access-Control-Allow-Origin'] = origin
     
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
