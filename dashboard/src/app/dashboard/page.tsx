@@ -2,9 +2,7 @@
 import { useState } from 'react';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useKeepAlive } from '@/hooks/useKeepAlive';
-import { api } from '@/lib/api';
 import { LiveFeed } from '@/components/LiveFeed';
-import { RiskLeaderboard } from '@/components/RiskLeaderboard';
 import { AttackToggle } from '@/components/AttackToggle';
 import { AlertsBanner } from '@/components/AlertsBanner';
 import { LatencyOverlay } from '@/components/LatencyOverlay';
@@ -13,13 +11,11 @@ import { UserDeepDive } from '@/components/UserDeepDive';
 import { Shield, Activity } from 'lucide-react';
 import { UserRiskState } from '@/types/events';
 import { GlassPanel, MetricCard, IconContainer, Badge } from '@/components/ui/primitives';
-import { motion } from 'framer-motion';
 
 export default function Dashboard() {
   useKeepAlive(); // Keep Render free-tier services alive
   const { events, totalEventsCount, riskUpdates, alerts, latencyStats, isConnected } = useWebSocket();
   const [selectedActor, setSelectedActor] = useState<{ user_id: string; username: string; department: string; role: string } | null>(null);
-  const [isSimulationStopped, setIsSimulationStopped] = useState(false);
   const highestRisk = Object.values(riskUpdates).sort((a, b) => b.current_risk - a.current_risk)[0];
 
   const targetUser: UserRiskState | null = selectedActor ? (
@@ -56,29 +52,10 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold tracking-tight">SHADOW-HUNT</h1>
           
           <div className="ml-4 flex items-center gap-2">
-            <Badge variant={isSimulationStopped ? 'neutral' : (isConnected ? 'emerald' : 'crimson')} className={isConnected && !isSimulationStopped ? 'animate-pulseGlow' : ''}>
-              {isSimulationStopped ? 'TRAFFIC STOPPED' : isConnected ? 'SYSTEM ACTIVE' : 'CONNECTION LOST'}
+            <Badge variant={isConnected ? 'emerald' : 'crimson'} className={isConnected ? 'animate-pulseGlow' : ''}>
+              {isConnected ? 'SYSTEM ACTIVE' : 'RECONNECTING...'}
             </Badge>
           </div>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => {
-              if (isSimulationStopped) {
-                api.startSimulation().then(() => setIsSimulationStopped(false));
-              } else {
-                api.stopSimulation().then(() => setIsSimulationStopped(true));
-              }
-            }}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-mono text-[10px] tracking-widest font-bold uppercase transition-all duration-300 ml-2 ${
-              isSimulationStopped 
-                ? 'bg-white text-black hover:bg-[#eee]' 
-                : 'bg-transparent border border-[#ff3366]/50 text-[#ff3366] hover:bg-[#ff3366]/10'
-            }`}
-          >
-            {isSimulationStopped ? 'RESUME STREAM' : 'STOP STREAM'}
-          </motion.button>
         </div>
         
         <div className="flex items-center gap-8">
