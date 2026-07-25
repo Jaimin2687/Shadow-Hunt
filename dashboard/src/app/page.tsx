@@ -32,6 +32,7 @@ export default function Dashboard() {
       anomaly_count: 0,
       last_event_time: Date.now(),
       is_isolated: false,
+      is_session_revoked: false,
       active_alerts: []
     }
   ) : null;

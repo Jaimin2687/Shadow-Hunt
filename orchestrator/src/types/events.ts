@@ -69,11 +69,12 @@ export interface UserRiskState {
   anomaly_count: number;
   last_event_time: number;
   is_isolated: boolean;
+  is_session_revoked: boolean;
   active_alerts: Alert[];
 }
 
 export interface WSMessage {
-  type: 'log_event' | 'risk_update' | 'alert' | 'soar_action' | 'system';
+  type: 'log_event' | 'risk_update' | 'alert' | 'soar_action' | 'event_blocked' | 'system';
   payload: any;
   timestamp: string;
   _t0_ns?: number;

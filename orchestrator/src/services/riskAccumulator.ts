@@ -36,6 +36,7 @@ export class RiskAccumulator {
         anomaly_count: 0,
         last_event_time: Date.now(),
         is_isolated: false,
+        is_session_revoked: false,
         active_alerts: []
       };
       this.evictStaleUsers();
@@ -139,6 +140,16 @@ export class RiskAccumulator {
     return this.userStates.get(userId);
   }
 
+  /**
+   * Returns true if the user has been actioned (isolated or session revoked)
+   * and their events should be blocked from the pipeline.
+   */
+  isUserBlocked(userId: string): boolean {
+    const state = this.userStates.get(userId);
+    if (!state) return false;
+    return state.is_isolated || state.is_session_revoked;
+  }
+
   applyAction(userId: string, action: SoarAction): UserRiskState | undefined {
     let state = this.userStates.get(userId);
     if (!state) {
@@ -176,6 +187,15 @@ export class RiskAccumulator {
         });
         break;
       case 'REVOKE_SESSION':
+        state.is_session_revoked = true;
+        state.active_alerts.push({
+          id: randomUUID(),
+          timestamp: new Date().toISOString(),
+          severity: 'CRITICAL',
+          message: `Session REVOKED${action.analyst_note ? ': ' + action.analyst_note : ''}`,
+          acknowledged: false
+        });
+        break;
       case 'FLAG_AUDIT':
       case 'STEP_UP_AUTH':
         state.active_alerts.push({

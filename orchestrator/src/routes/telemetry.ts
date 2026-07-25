@@ -40,11 +40,34 @@ export function createTelemetryRouter(
 
       const event = req.body as TelemetryEvent;
 
-      // Check if user is isolated (SOAR response)
-      const existingState = riskAccumulator.getUser(event.actor.user_id);
-      if (existingState?.is_isolated) {
-        // Still process for tracking, but flag it
-        logger.warn('Event from ISOLATED user', { context: { user_id: event.actor.user_id }});
+      // Block events from actioned users (ISOLATE / REVOKE_SESSION)
+      if (riskAccumulator.isUserBlocked(event.actor.user_id)) {
+        const userState = riskAccumulator.getUser(event.actor.user_id)!;
+        const reason = userState.is_isolated ? 'ISOLATED' : 'SESSION_REVOKED';
+        
+        logger.info(`Event BLOCKED from ${reason} user`, { context: { user_id: event.actor.user_id }});
+        
+        // Broadcast a blocked notification to the dashboard
+        broadcaster.broadcast({
+          type: 'event_blocked',
+          payload: {
+            user_id: event.actor.user_id,
+            username: userState.username,
+            reason,
+            original_event_type: event.event_type,
+            blocked_at: new Date().toISOString()
+          },
+          timestamp: new Date().toISOString()
+        });
+
+        const latencyMs = (performance.now() - startMs).toFixed(1);
+        res.status(200).json({ 
+          processed: false, 
+          blocked: true, 
+          reason,
+          latency_ms: parseFloat(latencyMs)
+        });
+        return;
       }
 
       const anomalyResponse = await engineClient.scoreEvent(event);
