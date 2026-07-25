@@ -102,10 +102,10 @@ export default function Dashboard() {
           <LiveFeed events={events} onSelectUser={(actor) => setSelectedActor(actor)} />
         </div>
         <div className="col-span-4 flex flex-col gap-4 min-h-0">
-          <div className="flex-1 min-h-0">
+          <div className="flex-[3] min-h-0">
             <RiskLeaderboard riskUpdates={riskUpdates} onSelectUser={(user) => setSelectedActor(user)} />
           </div>
-          <div className="shrink-0">
+          <div className="flex-[2] min-h-0">
             <AttackToggle />
           </div>
         </div>
