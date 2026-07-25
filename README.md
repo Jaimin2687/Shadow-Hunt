@@ -42,6 +42,15 @@ Built with a decoupled microservice architecture, it processes high-velocity tel
 
 ## ✨ Core Feature Set
 
+### 🔒 Enterprise-Grade Security & Resilience
+Following a comprehensive security audit, the architecture has been fully hardened for production:
+- **Zero-Trust APIs:** All sensitive routes are protected via API Key authentication (`x-api-key`).
+- **Idempotent State Engine:** Prevents data corruption and duplicate alerts through 30-second time-window deduplication and logical state guards.
+- **Circuit Breaker & Fallbacks:** The Node.js orchestrator uses `Opossum` circuit breakers and strict `axios` timeouts to prevent cascading socket failures if the ML Engine goes down.
+- **Strict Payload Validation:** Enforces rigorous `Zod` and `Pydantic` schema validations, neutralizing injection and XSS threats.
+- **Bounded Memory Management:** Custom LRU (Least Recently Used) caching with 24-hour TTLs prevents out-of-memory (OOM) crashes under heavy data floods.
+- **Defensive Observability:** Structured JSON logging (`winston`, `python-json-logger`) with built-in PII and credential redaction, ready for SIEM ingestion.
+
 ### 🧠 Real-Time EWMA Risk Engine
 SHADOW-HUNT doesn't just trigger dumb alerts. It tracks an **Exponential Weighted Moving Average (EWMA)** for every user. 
 - **Attack Spikes:** Anomalous behavior immediately spikes the risk score to CRITICAL.
