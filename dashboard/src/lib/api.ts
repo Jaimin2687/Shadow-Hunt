@@ -2,9 +2,9 @@ const isLocal = typeof window !== 'undefined' && window.location.hostname === 'l
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (isLocal ? 'http://localhost:4000' : 'https://shadow-hunt-orchestrator.onrender.com');
 const SCENARIO_API_URL = process.env.NEXT_PUBLIC_SCENARIO_API_URL || (isLocal ? 'http://localhost:5555' : 'https://shadow-hunt-simulator.onrender.com');
 
-// Security keys matching the defaults in orchestrator and simulator
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'shadow-hunt-default-key';
-const CONTROL_KEY = process.env.NEXT_PUBLIC_CONTROL_KEY || 'default-sim-secret';
+// Security keys — production values match render.yaml, local defaults match code defaults
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY || (isLocal ? 'shadow-hunt-default-key' : 'shadow-hunt-api-key-production');
+const CONTROL_KEY = process.env.NEXT_PUBLIC_CONTROL_KEY || (isLocal ? 'default-sim-secret' : 'shadow-hunt-sim-secret-production');
 
 const apiHeaders = (): Record<string, string> => ({
   'Content-Type': 'application/json',
