@@ -1,0 +1,43 @@
+services:
+  # 1. AI UEBA Engine (Python / FastAPI)
+  - type: web
+    name: shadow-hunt-engine
+    env: python
+    rootDir: engine
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+
+  # 2. Telemetry Simulator (Python / aiohttp)
+  - type: web
+    name: shadow-hunt-simulator
+    env: python
+    rootDir: simulator
+    buildCommand: pip install -r requirements.txt
+    startCommand: python simulator.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: SIMULATOR_SECRET
+        value: shadow-hunt-sim-secret-production
+      - key: ORCHESTRATOR_URL
+        # We will populate this with the orchestrator's URL once deployed
+        value: https://shadow-hunt-orchestrator.onrender.com/api/telemetry
+
+  # 3. Orchestrator (Node.js / Express / WebSockets)
+  - type: web
+    name: shadow-hunt-orchestrator
+    env: node
+    rootDir: orchestrator
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.x
+      - key: API_KEY
+        value: shadow-hunt-api-key-production
+      - key: ENGINE_URL
+        # Link to the engine service internally or externally
+        value: https://shadow-hunt-engine.onrender.com
