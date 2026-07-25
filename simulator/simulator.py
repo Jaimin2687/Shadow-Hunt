@@ -109,11 +109,13 @@ async def send_event(event):
         return
     event["_t0_ns"] = time.time_ns()
     try:
-        async with ctx.session.post(ORCHESTRATOR_URL, json=event) as resp:
-            pass
+        async with ctx.session.post(ORCHESTRATOR_URL, json=event, timeout=5) as resp:
+            if resp.status != 200:
+                body = await resp.text()
+                logger.warning(f"Orchestrator rejected event: {resp.status} {body[:200]}")
         ctx.total_events += 1
-    except ClientError as e:
-        logger.debug(f"Failed to send event: {e}")
+    except Exception as e:
+        logger.warning(f"Failed to send event to {ORCHESTRATOR_URL}: {type(e).__name__}: {e}")
 
 async def run_scenario(scenario_id):
     scenario_func = SCENARIOS.get(scenario_id)

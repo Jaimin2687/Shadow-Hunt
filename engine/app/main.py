@@ -25,6 +25,11 @@ app.add_middleware(
 from app.api.score import router as score_router
 app.include_router(score_router, prefix="/api/v1")
 
+@app.get("/")
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "service": "shadow-hunt-engine"}
+
 @app.on_event("startup")
 async def startup_event():
     logger.info("Generating synthetic baseline for PyOD...", extra={"context": {"samples": 500}})
