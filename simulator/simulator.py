@@ -260,6 +260,12 @@ async def main():
     ctx.event_rate_ms = args.rate
     ctx.time_scale = args.scale
 
+    # Startup diagnostics — makes deployment issues immediately visible
+    logger.info(f"ORCHESTRATOR_URL = {ORCHESTRATOR_URL}")
+    logger.info(f"CONTROL_PORT = {CONTROL_PORT}")
+    logger.info(f"DASHBOARD_URL (CORS) = {os.getenv('DASHBOARD_URL', 'http://localhost:3000')}")
+    logger.info(f"Event rate = {ctx.event_rate_ms}ms, Time scale = {ctx.time_scale}")
+
     async with ClientSession() as session:
         ctx.session = session
         
