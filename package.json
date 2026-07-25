@@ -1,0 +1,18 @@
+{
+  "name": "shadow-hunt",
+  "private": true,
+  "version": "1.0.0",
+  "description": "SHADOW-HUNT: Autonomous UEBA & Insider Threat Interceptor",
+  "scripts": {
+    "dev": "concurrently -k -n \"DASH,ORCH,ENGINE,SIM\" -c \"cyan,green,yellow,magenta\" \"npm run dev:dashboard\" \"npm run dev:orchestrator\" \"npm run dev:engine\" \"npm run dev:simulator\"",
+    "dev:dashboard": "cd dashboard && npm run dev",
+    "dev:orchestrator": "cd orchestrator && npx tsx watch src/server.ts",
+    "dev:engine": "cd engine && uvicorn app.main:app --reload --port 8000",
+    "dev:simulator": "cd simulator && python simulator.py",
+    "build": "cd dashboard && npm run build",
+    "install:all": "cd dashboard && npm install && cd ../orchestrator && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
