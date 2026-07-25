@@ -53,7 +53,7 @@ export function AttackToggle() {
         <h2 className="font-bold tracking-widest text-[10px] uppercase text-[#ffffff]">Attack Simulation Control</h2>
       </div>
 
-      <div className="p-3 flex-1 flex flex-col gap-2 overflow-y-auto bg-[#050505]">
+      <div className="p-3 flex-1 flex flex-col gap-2 overflow-y-auto custom-scrollbar bg-[#050505]">
         {SCENARIOS.map(scenario => {
           const isActive = activeScenarios.has(scenario.id);
           return (

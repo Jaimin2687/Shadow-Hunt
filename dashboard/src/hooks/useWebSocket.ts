@@ -8,17 +8,35 @@ interface LatencyStats {
 }
 
 export function useWebSocket() {
-  const [events, setEvents] = useState<TelemetryEvent[]>([]);
+  const [events, setEvents] = useState<TelemetryEvent[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('sh_events');
+      return cached ? JSON.parse(cached) : [];
+    }
+    return [];
+  });
   const [totalEventsCount, setTotalEventsCount] = useState<number>(0);
-  const [riskUpdates, setRiskUpdates] = useState<Record<string, UserRiskState>>({});
-  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [riskUpdates, setRiskUpdates] = useState<Record<string, UserRiskState>>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('sh_risk');
+      return cached ? JSON.parse(cached) : {};
+    }
+    return {};
+  });
+  const [alerts, setAlerts] = useState<Alert[]>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('sh_alerts');
+      return cached ? JSON.parse(cached) : [];
+    }
+    return [];
+  });
   const [isConnected, setIsConnected] = useState(false);
   const [latencyStats, setLatencyStats] = useState<LatencyStats>({ p50: 0, p95: 0, p99: 0 });
 
   const ws = useRef<WebSocket | null>(null);
-  const eventsBuffer = useRef<TelemetryEvent[]>([]);
-  const riskUpdatesBuffer = useRef<Record<string, UserRiskState>>({});
-  const alertsBuffer = useRef<Alert[]>([]);
+  const eventsBuffer = useRef<TelemetryEvent[]>(events);
+  const riskUpdatesBuffer = useRef<Record<string, UserRiskState>>(riskUpdates);
+  const alertsBuffer = useRef<Alert[]>(alerts);
   const totalCountRef = useRef<number>(0);
   const latenciesBuffer = useRef<number[]>([]);
   const hasNewEvents = useRef(false);
@@ -27,7 +45,12 @@ export function useWebSocket() {
   const hasNewLatencies = useRef(false);
 
   const connect = useCallback(() => {
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:4000/ws';
+    let wsUrl = process.env.NEXT_PUBLIC_WS_URL;
+    if (!wsUrl) {
+      wsUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+        ? 'wss://shadow-hunt-orchestrator.onrender.com/ws'
+        : 'ws://localhost:4000/ws';
+    }
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => setIsConnected(true);
@@ -77,16 +100,22 @@ export function useWebSocket() {
   useEffect(() => {
     const interval = setInterval(() => {
       if (hasNewEvents.current) {
-        setEvents([...eventsBuffer.current]);
+        const newEvents = [...eventsBuffer.current];
+        setEvents(newEvents);
+        if (typeof window !== 'undefined') localStorage.setItem('sh_events', JSON.stringify(newEvents));
         setTotalEventsCount(totalCountRef.current);
         hasNewEvents.current = false;
       }
       if (hasNewRisk.current) {
-        setRiskUpdates({ ...riskUpdatesBuffer.current });
+        const newRisk = { ...riskUpdatesBuffer.current };
+        setRiskUpdates(newRisk);
+        if (typeof window !== 'undefined') localStorage.setItem('sh_risk', JSON.stringify(newRisk));
         hasNewRisk.current = false;
       }
       if (hasNewAlerts.current) {
-        setAlerts([...alertsBuffer.current]);
+        const newAlerts = [...alertsBuffer.current];
+        setAlerts(newAlerts);
+        if (typeof window !== 'undefined') localStorage.setItem('sh_alerts', JSON.stringify(newAlerts));
         hasNewAlerts.current = false;
       }
       if (hasNewLatencies.current && latenciesBuffer.current.length > 0) {
