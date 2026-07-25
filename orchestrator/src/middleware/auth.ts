@@ -20,12 +20,5 @@ export function apiKeyAuth(req: Request, res: Response, next: NextFunction) {
     return;
   }
   
-  logger.info('Authentication successful', {
-    context: {
-      endpoint: req.originalUrl,
-      provided_key: key,
-      ip: req.ip
-    }
-  });
   next();
 }

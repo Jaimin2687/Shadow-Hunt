@@ -10,7 +10,7 @@ const respondSchema = z.object({
   action: z.string().refine(val => VALID_ACTIONS.has(val), { 
     message: "Invalid action. Allowed values: ISOLATE_ACCOUNT, REVOKE_SESSION, FLAG_AUDIT, STEP_UP_AUTH" 
   }),
-  target_user_id: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_-]+$/, "Invalid target_user_id format"),
+  target_user_id: z.string().min(3).max(50).regex(/^[a-zA-Z0-9._-]+$/, "Invalid target_user_id format"),
   analyst_note: z.string().optional()
 });
 

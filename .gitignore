@@ -34,3 +34,6 @@ docker-compose.override.yml
 # Logs
 *.log
 npm-debug.log*
+
+# Process IDs
+.pids/

@@ -4,9 +4,6 @@ import json
 import logging
 import math
 import os
-import json
-import logging
-import math
 import random
 import time
 import uuid
@@ -209,10 +206,18 @@ async def handle_stop(request):
     return web.json_response({"status": "stopped", "is_stopped": True})
 
 async def handle_start(request):
+    secret = os.getenv("SIMULATOR_SECRET", "default-sim-secret")
+    if request.headers.get("X-Control-Key") != secret:
+        return web.json_response({"error": "Unauthorized"}, status=401)
+        
     ctx.is_stopped = False
     return web.json_response({"status": "started", "is_stopped": False})
 
 async def handle_scale(request):
+    secret = os.getenv("SIMULATOR_SECRET", "default-sim-secret")
+    if request.headers.get("X-Control-Key") != secret:
+        return web.json_response({"error": "Unauthorized"}, status=401)
+        
     data = await request.json()
     scale = data.get("time_scale", data.get("scale", 1.0))
     ctx.time_scale = float(scale)

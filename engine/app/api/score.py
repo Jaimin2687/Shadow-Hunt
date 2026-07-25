@@ -14,7 +14,6 @@ from app.features.volume import compute_volume_zscore
 from app.features.peer_group import compute_peer_suppression
 from app.core.risk import aggregate_risk_score, get_severity, get_recommended_action
 
-logger = logging.getLogger("shadow-hunt.engine")
 
 router = APIRouter()
 

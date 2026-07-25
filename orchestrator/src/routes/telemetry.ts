@@ -14,10 +14,10 @@ export function createTelemetryRouter(
   const router = Router();
 
   const telemetrySchema = z.object({
-    event_id: z.string().regex(/^[a-zA-Z0-9_-]+$/),
+    event_id: z.string().regex(/^[a-zA-Z0-9._-]+$/),
     actor: z.object({
-      user_id: z.string().regex(/^[a-zA-Z0-9_-]+$/),
-      username: z.string().regex(/^[a-zA-Z0-9_-]+$/)
+      user_id: z.string().regex(/^[a-zA-Z0-9._-]+$/),
+      username: z.string().regex(/^[a-zA-Z0-9._-]+$/)
     }).passthrough()
   }).passthrough(); // allows other fields since we only care about sanitizing specific ones here
 

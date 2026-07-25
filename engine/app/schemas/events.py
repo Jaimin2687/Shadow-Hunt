@@ -2,8 +2,8 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 
 class ActorInfo(BaseModel):
-    user_id: str = Field(..., pattern=r'^[a-zA-Z0-9_-]+$')
-    username: str = Field(..., pattern=r'^[a-zA-Z0-9_-]+$')
+    user_id: str = Field(..., pattern=r'^[a-zA-Z0-9._-]+$')
+    username: str = Field(..., pattern=r'^[a-zA-Z0-9._-]+$')
     department: str
     role: str
     source_ip: str
@@ -28,7 +28,7 @@ class GroundTruth(BaseModel):
 
 class TelemetryEvent(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
-    event_id: str = Field(..., pattern=r'^[a-zA-Z0-9_-]+$')
+    event_id: str = Field(..., pattern=r'^[a-zA-Z0-9._-]+$')
     timestamp: str
     event_category: str
     event_type: str

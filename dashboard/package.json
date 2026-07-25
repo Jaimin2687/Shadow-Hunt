@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@next/swc-darwin-arm64": "^16.2.11",
     "@tanstack/react-virtual": "^3.0.0",
     "lucide-react": "^0.378.0",
     "next": "^14.2.0",
