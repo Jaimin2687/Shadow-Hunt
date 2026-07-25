@@ -1,13 +1,14 @@
 import { RiskAccumulator } from './riskAccumulator.js';
 import { WSBroadcaster } from '../ws/broadcaster.js';
-import { SoarAction, UserRiskState } from '../types/events.js';
+import { logger } from '../utils/logger.js';
+import { SoarAction, SoarResult } from '../types/events.js';
 
 export class SoarDispatcher {
   constructor(private riskAccumulator: RiskAccumulator, private broadcaster: WSBroadcaster) {}
 
-  async executeAction(action: SoarAction): Promise<{ success: boolean; message: string; userState?: UserRiskState }> {
+  async executeAction(action: SoarAction): Promise<SoarResult> {
     try {
-      console.log(`[SOAR] Executing action ${action.action} for user ${action.target_user_id}`);
+      logger.info(`Executing action ${action.action} for user ${action.target_user_id}`, { context: { action: action.action, target_user_id: action.target_user_id }});
       
       const updatedState = this.riskAccumulator.applyAction(action.target_user_id, action);
       if (!updatedState) {
@@ -19,7 +20,7 @@ export class SoarDispatcher {
 
       return { success: true, message: `Action ${action.action} applied successfully`, userState: updatedState };
     } catch (err: any) {
-      console.error('[SOAR] Error executing action:', err);
+      logger.error('Error executing SOAR action', { context: { error: err.message }});
       return { success: false, message: err.message || 'Internal error applying action' };
     }
   }

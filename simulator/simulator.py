@@ -3,6 +3,10 @@ import asyncio
 import json
 import logging
 import math
+import os
+import json
+import logging
+import math
 import random
 import time
 import uuid
@@ -159,6 +163,8 @@ async def normal_traffic_loop():
             await send_event(event)
 
 # CORS Middleware
+ALLOWED_ORIGIN = os.getenv('DASHBOARD_URL', 'http://localhost:3000')
+
 @web.middleware
 async def cors_middleware(request, handler):
     if request.method == "OPTIONS":
@@ -168,13 +174,21 @@ async def cors_middleware(request, handler):
             response = await handler(request)
         except web.HTTPException as ex:
             response = ex
-    response.headers['Access-Control-Allow-Origin'] = '*'
+            
+    origin = request.headers.get('Origin', '')
+    if origin == ALLOWED_ORIGIN:
+        response.headers['Access-Control-Allow-Origin'] = origin
+    
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, X-Control-Key'
     return response
 
 # HTTP Handlers
 async def handle_inject(request):
+    secret = os.getenv("SIMULATOR_SECRET", "default-sim-secret")
+    if request.headers.get("X-Control-Key") != secret:
+        return web.json_response({"error": "Unauthorized"}, status=401)
+        
     data = await request.json()
     scenario = data.get("scenario") or data.get("scenarioId")
     if scenario in SCENARIOS:
@@ -184,6 +198,10 @@ async def handle_inject(request):
     return web.json_response({"error": "Unknown scenario"}, status=400)
 
 async def handle_stop(request):
+    secret = os.getenv("SIMULATOR_SECRET", "default-sim-secret")
+    if request.headers.get("X-Control-Key") != secret:
+        return web.json_response({"error": "Unauthorized"}, status=401)
+        
     ctx.is_stopped = True
     for task in ctx.running_attacks.values():
         task.cancel()

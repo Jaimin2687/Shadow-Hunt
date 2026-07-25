@@ -2,8 +2,9 @@ from fastapi import APIRouter, HTTPException
 from typing import List
 import asyncio
 import datetime
+import math
 import numpy as np
-import logging
+from app.core.logger import logger
 
 from app.schemas.events import TelemetryEvent, AnomalyResponse, AnomalyBreakdown
 from app.models.state import UserBehaviorWindow
@@ -19,7 +20,22 @@ router = APIRouter()
 
 # Warm-up period: dampen scores for users with very few events
 WARMUP_EVENTS = 5
+MAX_USERS = 500
+EVICTION_TTL_SEC = 86400
 
+def prune_stale_users(user_states):
+    if len(user_states) >= MAX_USERS:
+        now = datetime.datetime.now(datetime.timezone.utc).timestamp()
+        sorted_users = sorted(user_states.items(), key=lambda item: item[1].last_event_time)
+        evicted = 0
+        for uid, state in sorted_users:
+            if len(user_states) <= MAX_USERS * 0.8:
+                break
+            if now - state.last_event_time > EVICTION_TTL_SEC or len(user_states) >= MAX_USERS:
+                del user_states[uid]
+                evicted += 1
+        if evicted > 0:
+            logger.info("Evicted stale users", extra={"context": {"evicted_count": evicted, "remaining_users": len(user_states)}})
 
 @router.post("/score", response_model=AnomalyResponse)
 async def score_event(event: TelemetryEvent):
@@ -30,9 +46,11 @@ async def score_event(event: TelemetryEvent):
 
     # --- Get or create user state ---
     if user_id not in USER_STATES:
+        prune_stale_users(USER_STATES)
         USER_STATES[user_id] = UserBehaviorWindow(user_id=user_id, department=dept)
     state = USER_STATES[user_id]
     state.event_count += 1
+    state.last_event_time = datetime.datetime.now(datetime.timezone.utc).timestamp()
     warmup_factor = min(1.0, state.event_count / WARMUP_EVENTS)
 
     # --- 1. Access Novelty ---
@@ -45,11 +63,21 @@ async def score_event(event: TelemetryEvent):
     novelty = float(np.clip(raw_novelty * warmup_factor, 0.0, 1.0))
     state.access_set.add(res_id)
 
-    # --- 2. Temporal Entropy ---
+    # --- 2. Temporal Entropy & Time Delta ---
     try:
         dt = datetime.datetime.fromisoformat(event.timestamp.replace("Z", "+00:00"))
     except (ValueError, TypeError):
         dt = datetime.datetime.now(datetime.timezone.utc)
+        
+    t_current = dt.timestamp()
+    t_previous = state.last_event_time if state.last_event_time > 0 else t_current - 1
+    
+    time_delta = t_current - t_previous
+    if time_delta <= 0:
+        time_delta = 1.0  # Prevent Divide-by-Zero
+        
+    decay_factor = 1.0 / time_delta
+    
     hour = dt.hour
     state.hourly_histogram[hour] += 1
     _, raw_temporal = compute_temporal_entropy(state.hourly_histogram, hour)
@@ -112,7 +140,13 @@ async def score_event(event: TelemetryEvent):
 
     # --- 7. Final Risk Aggregation ---
     risk_score = aggregate_risk_score(novelty, temporal_score, max_z, pyod_percentile)
+    
+    if math.isnan(risk_score) or math.isinf(risk_score):
+        risk_score = state.previous_score # Fallback safely
+        
     risk_score = float(np.clip(risk_score, 0.0, 100.0))
+    risk_score = min(risk_score, 100.0) # Clamp Maximum Risk
+    state.previous_score = risk_score
 
     # Apply peer suppression: reduce score if behavior matches department baseline
     if peer_suppression < 0.3 and risk_score < 70:

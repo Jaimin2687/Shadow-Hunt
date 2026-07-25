@@ -10,6 +10,33 @@ import { SoarDispatcher } from './services/soarDispatcher.js';
 import { createTelemetryRouter } from './routes/telemetry.js';
 import { createRespondRouter } from './routes/respond.js';
 import { getUsersRouter } from './routes/users.js';
+import { apiKeyAuth } from './middleware/auth.js';
+import rateLimit from 'express-rate-limit';
+import { logger } from './utils/logger.js';
+
+const telemetryLimiter = rateLimit({
+  windowMs: 1000,
+  max: 50,
+  message: { error: 'Telemetry rate limit exceeded' },
+  handler: (req, res, next, options) => {
+    logger.warn('Rate limit exceeded', { context: { endpoint: req.originalUrl, ip: req.ip } });
+    res.status(options.statusCode).send(options.message);
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const soarLimiter = rateLimit({
+  windowMs: 60000,
+  max: 10,
+  message: { error: 'SOAR rate limit exceeded' },
+  handler: (req, res, next, options) => {
+    logger.warn('Rate limit exceeded', { context: { endpoint: req.originalUrl, ip: req.ip } });
+    res.status(options.statusCode).send(options.message);
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 // 2. Create Express app
 const app = express();
@@ -30,9 +57,9 @@ const engineClient = new EngineClient();
 const soarDispatcher = new SoarDispatcher(riskAccumulator, broadcaster);
 
 // 7. Mount routes
-app.use('/api/telemetry', createTelemetryRouter(engineClient, riskAccumulator, broadcaster));
-app.use('/api/respond', createRespondRouter(soarDispatcher));
-app.use('/api/users', getUsersRouter(riskAccumulator));
+app.use('/api/telemetry', telemetryLimiter, createTelemetryRouter(engineClient, riskAccumulator, broadcaster));
+app.use('/api/respond', soarLimiter, apiKeyAuth, createRespondRouter(soarDispatcher));
+app.use('/api/users', apiKeyAuth, getUsersRouter(riskAccumulator));
 
 // 8. Health check
 app.get('/api/health', (req, res) => {
@@ -46,17 +73,17 @@ app.get('/api/health', (req, res) => {
 // 9. Start listening on PORT
 server.listen(config.PORT, () => {
   // 10. Log startup message
-  console.log(`[Server] Orchestrator listening on port ${config.PORT}`);
-  console.log(`[Server] Connected to Engine URL: ${config.ENGINE_URL}`);
-  console.log(`[Server] Allowed Client Origin: ${config.CLIENT_ORIGIN}`);
+  logger.info(`Orchestrator listening on port ${config.PORT}`, { context: { port: config.PORT } });
+  logger.info(`Connected to Engine URL: ${config.ENGINE_URL}`);
+  logger.info(`Allowed Client Origin: ${config.CLIENT_ORIGIN}`);
 });
 
 process.on('SIGTERM', () => {
-  console.log('[Server] SIGTERM received. Shutting down gracefully...');
+  logger.info('SIGTERM received. Shutting down gracefully...');
   server.close(() => process.exit(0));
 });
 
 process.on('SIGINT', () => {
-  console.log('[Server] SIGINT received. Shutting down gracefully...');
+  logger.info('SIGINT received. Shutting down gracefully...');
   server.close(() => process.exit(0));
 });

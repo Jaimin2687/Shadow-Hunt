@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import * as http from 'http';
+import { logger } from '../utils/logger.js';
 import { TelemetryEvent, UserRiskState, Alert, SoarAction, WSMessage } from '../types/events.js';
 
 export class WSBroadcaster {
@@ -9,14 +10,14 @@ export class WSBroadcaster {
     this.wss = new WebSocketServer({ server });
 
     this.wss.on('connection', (ws: WebSocket) => {
-      console.log(`[WS] Client connected. Total clients: ${this.getClientCount()}`);
+      logger.info(`[WS] Client connected. Total clients: ${this.getClientCount()}`);
       
       ws.on('close', () => {
-        console.log(`[WS] Client disconnected. Total clients: ${this.getClientCount()}`);
+        logger.info(`[WS] Client disconnected. Total clients: ${this.getClientCount()}`);
       });
 
       ws.on('error', (err) => {
-        console.error(`[WS] Client error:`, err);
+        logger.error(`[WS] Client error`, { error: err.message });
       });
     });
   }

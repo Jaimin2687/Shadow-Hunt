@@ -12,6 +12,8 @@ class UserBehaviorWindow:
     buffer_head: int = 0
     buffer_count: int = 0
     event_count: int = 0
+    last_event_time: float = 0.0
+    previous_score: float = 0.0
     session_ips: Dict[str, Set[str]] = field(default_factory=dict)
     last_login_locations: List[Tuple[str, float]] = field(default_factory=list)
     ewma_mean: np.ndarray = field(default_factory=lambda: np.zeros(4, dtype=np.float32))

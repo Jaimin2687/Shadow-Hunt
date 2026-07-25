@@ -4,6 +4,22 @@ import { randomUUID } from 'crypto';
 export class RiskAccumulator {
   private userStates: Map<string, UserRiskState> = new Map();
   private readonly DECAY_LAMBDA: number = Math.LN2 / 24; // 24h half-life
+  private static readonly MAX_USERS = 500;
+  private static readonly EVICTION_TTL_MS = 24 * 60 * 60 * 1000;
+
+  private evictStaleUsers(): void {
+    if (this.userStates.size >= RiskAccumulator.MAX_USERS) {
+      const now = Date.now();
+      const sorted = [...this.userStates.entries()].sort((a, b) => a[1].last_event_time - b[1].last_event_time);
+      for (const [id, state] of sorted) {
+        if (this.userStates.size <= RiskAccumulator.MAX_USERS * 0.8) break;
+        if (now - state.last_event_time > RiskAccumulator.EVICTION_TTL_MS || this.userStates.size >= RiskAccumulator.MAX_USERS) {
+          this.userStates.delete(id);
+        }
+      }
+    }
+  }
+
 
   private getOrCreateUser(event: TelemetryEvent): UserRiskState {
     const userId = event.actor.user_id;
@@ -22,6 +38,7 @@ export class RiskAccumulator {
         is_isolated: false,
         active_alerts: []
       };
+      this.evictStaleUsers();
       this.userStates.set(userId, state);
     }
     return state;
@@ -134,6 +151,18 @@ export class RiskAccumulator {
       }
     }
     if (!state) return undefined;
+
+    if (action.action === 'ISOLATE_ACCOUNT' && state.is_isolated) {
+      return state;
+    }
+
+    const recentDup = state.active_alerts.find(a => 
+      a.message.includes(action.action) && 
+      (Date.now() - new Date(a.timestamp).getTime()) < 30000
+    );
+    if (recentDup) {
+      return state;
+    }
 
     switch (action.action) {
       case 'ISOLATE_ACCOUNT':

@@ -4,6 +4,7 @@ from typing import Dict
 from app.models.state import UserBehaviorWindow
 from app.models.scorer import AnomalyScorer
 from app.features.peer_group import PeerGroupManager
+from app.core.logger import logger
 
 # Global state
 USER_STATES: Dict[str, UserBehaviorWindow] = {}
@@ -26,8 +27,8 @@ app.include_router(score_router, prefix="/api/v1")
 
 @app.on_event("startup")
 async def startup_event():
-    print("Generating synthetic baseline for PyOD...")
+    logger.info("Generating synthetic baseline for PyOD...", extra={"context": {"samples": 500}})
     X_train = SCORER.generate_synthetic_baseline()
-    print("Fitting baseline models...")
+    logger.info("Fitting baseline models...", extra={"context": {"model": "IForest/LOF"}})
     SCORER.fit_baseline(X_train)
-    print("Startup complete. Models fitted and ready.")
+    logger.info("Startup complete. Models fitted and ready.", extra={"context": {"status": "ready"}})
