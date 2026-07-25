@@ -2,19 +2,22 @@
 import { useState, useEffect } from 'react';
 import { TelemetryEvent } from '@/types/events';
 import { Terminal, AlertTriangle, ArrowUpCircle, Play, Pause } from 'lucide-react';
-
-const SEVERITY_COLORS = {
-  INFORMATIONAL: 'text-[#3388ff]',
-  LOW: 'text-[#00ffff]',
-  MEDIUM: 'text-[#ffaa00]',
-  HIGH: 'text-[#ff6600]',
-  CRITICAL: 'text-[#ff3366] text-glow-red font-bold',
-};
+import { GlassPanel, Badge } from './ui/primitives';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DEPT_COLORS = {
   Engineering: 'bg-[#8855ff]/20 text-[#8855ff] border-[#8855ff]/30',
   HR: 'bg-[#00ff88]/20 text-[#00ff88] border-[#00ff88]/30',
   Finance: 'bg-[#3388ff]/20 text-[#3388ff] border-[#3388ff]/30',
+};
+
+const getSeverityVariant = (severity: string) => {
+  switch (severity) {
+    case 'CRITICAL': return 'crimson';
+    case 'HIGH': return 'amber';
+    case 'MEDIUM': return 'emerald';
+    default: return 'cyan';
+  }
 };
 
 export function LiveFeed({ 
@@ -56,7 +59,7 @@ export function LiveFeed({
   const displayList = autoScroll ? events.slice(0, 80) : frozenEvents;
 
   return (
-    <div className="glass-card rounded-xl flex flex-col h-full overflow-hidden relative">
+    <GlassPanel accentColor="from-emerald-500/20 to-transparent" className="rounded-xl flex flex-col h-full overflow-hidden relative">
       {/* Header */}
       <div className="p-3 border-b border-[#64b4ff]/10 flex items-center justify-between bg-black/20 shrink-0">
         <div className="flex items-center gap-2 text-[#00ff88]">
@@ -81,15 +84,20 @@ export function LiveFeed({
       </div>
 
       {/* Missed Events Floating Banner */}
-      {!autoScroll && missedCount > 0 && (
-        <div 
-          onClick={handleToggleAutoScroll}
-          className="bg-gradient-to-r from-amber-500/20 via-[#00ff88]/20 to-amber-500/20 border-y border-[#00ff88]/40 py-2 px-4 flex items-center justify-center gap-2 text-xs font-mono font-bold text-[#00ff88] cursor-pointer hover:bg-white/10 transition-all animate-pulse shadow-lg shrink-0"
-        >
-          <ArrowUpCircle className="w-4 h-4 text-amber-400" />
-          <span>+{missedCount} NEW TELEMETRY EVENTS RECEIVED — CLICK TO CATCH UP & RESUME STREAM</span>
-        </div>
-      )}
+      <AnimatePresence>
+        {!autoScroll && missedCount > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            onClick={handleToggleAutoScroll}
+            className="backdrop-blur-xl bg-gradient-to-r from-amber-500/20 via-[#00ff88]/20 to-amber-500/20 border-y border-[#00ff88]/40 py-2 px-4 flex items-center justify-center gap-2 text-xs font-mono font-bold text-[#00ff88] cursor-pointer hover:bg-white/10 transition-all animate-pulse shadow-lg shrink-0"
+          >
+            <ArrowUpCircle className="w-4 h-4 text-amber-400" />
+            <span>+{missedCount} NEW TELEMETRY EVENTS RECEIVED — CLICK TO CATCH UP & RESUME STREAM</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Table Body */}
       <div className="flex-1 overflow-y-auto bg-[#030610] divide-y divide-[#64b4ff]/10">
@@ -105,7 +113,9 @@ export function LiveFeed({
               : '--';
 
             return (
-              <div
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
                 key={event.event_id}
                 onClick={() => onSelectUser?.({
                   user_id: event.actor.user_id,
@@ -121,8 +131,10 @@ export function LiveFeed({
                   {new Date(event.timestamp).toLocaleTimeString([], { hour12: false })}
                 </span>
                 
-                <span className={`w-28 shrink-0 text-xs font-semibold ${SEVERITY_COLORS[event.severity] || 'text-white'}`}>
-                  {event.severity}
+                <span className="w-28 shrink-0 flex items-center">
+                  <Badge variant={getSeverityVariant(event.severity) as any}>
+                    {event.severity}
+                  </Badge>
                 </span>
 
                 <span className="font-bold text-[#e8edf5] w-32 truncate shrink-0 text-white">
@@ -150,9 +162,11 @@ export function LiveFeed({
                 )}
 
                 {isAttack ? (
-                  <div className="flex items-center gap-1 bg-[#ff3366]/20 text-[#ff3366] px-2 py-0.5 rounded border border-[#ff3366]/60 animate-risk-pulse shrink-0 shadow-[0_0_8px_rgba(255,51,102,0.4)]">
-                    <AlertTriangle className="w-3 h-3" />
-                    <span className="text-[10px] font-bold font-sans tracking-wide">THREAT</span>
+                  <div className="shrink-0">
+                    <Badge variant="crimson" className="animate-risk-pulse flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      THREAT
+                    </Badge>
                   </div>
                 ) : (
                   <div className="w-20 shrink-0 text-right text-[11px] text-[#4a5a78]">
@@ -163,11 +177,11 @@ export function LiveFeed({
                 <span className="text-[#00ff88] text-[11px] w-14 text-right shrink-0 font-bold">
                   {latency}ms
                 </span>
-              </div>
+              </motion.div>
             );
           })
         )}
       </div>
-    </div>
+    </GlassPanel>
   );
 }

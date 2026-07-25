@@ -1,5 +1,7 @@
 'use client';
 import { Activity } from 'lucide-react';
+import { GlassPanel, MetricCard, Badge } from './ui/primitives';
+import { motion } from 'framer-motion';
 
 interface LatencyStats {
   p50: number;
@@ -17,29 +19,31 @@ export function LatencyOverlay({ stats }: { stats: LatencyStats }) {
   const isSlaMet = stats.p99 < 20;
 
   return (
-    <div className="flex flex-col items-end border-l border-[#64b4ff]/20 pl-6 ml-2">
-      <div className="flex items-center gap-2 mb-1">
-        <Activity className={`w-4 h-4 ${isSlaMet ? 'text-[#00ff88]' : 'text-[#ffaa00]'}`} />
-        <span className="text-xs font-bold tracking-widest text-[#7a8ba8] uppercase">E2E Latency</span>
-        <span className={`text-[10px] px-1.5 py-0.5 rounded border font-bold ${isSlaMet ? 'bg-[#00ff88]/10 text-[#00ff88] border-[#00ff88]/30' : 'bg-[#ffaa00]/10 text-[#ffaa00] border-[#ffaa00]/30'}`}>
+    <GlassPanel className="absolute top-4 right-4 p-4 min-w-[200px] z-50 flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-4 border-b border-[#222] pb-2">
+        <div className="flex items-center gap-2">
+          <Activity className={`w-4 h-4 ${isSlaMet ? 'text-[#00ff88]' : 'text-[#ffaa00]'}`} />
+          <span className="text-xs font-bold tracking-widest text-[#888888] uppercase">E2E Latency</span>
+        </div>
+        <Badge variant={isSlaMet ? 'emerald' : 'amber'}>
           {isSlaMet ? 'SUB-20ms SLA ✓' : 'SLA WARNING ⚠'}
-        </span>
+        </Badge>
       </div>
       
-      <div className="flex gap-4 font-jetbrains text-sm">
-        <div className="flex flex-col items-end">
-          <span className="text-[10px] text-[#4a5a78]">P50</span>
+      <div className="flex gap-4 font-mono text-sm justify-between">
+        <div className="flex flex-col items-start">
+          <span className="text-[10px] tracking-widest uppercase text-[#555555]">P50</span>
           <span className={getLatencyColor(stats.p50)}>{stats.p50.toFixed(1)}ms</span>
         </div>
-        <div className="flex flex-col items-end">
-          <span className="text-[10px] text-[#4a5a78]">P95</span>
+        <div className="flex flex-col items-start">
+          <span className="text-[10px] tracking-widest uppercase text-[#555555]">P95</span>
           <span className={getLatencyColor(stats.p95)}>{stats.p95.toFixed(1)}ms</span>
         </div>
-        <div className="flex flex-col items-end font-bold">
-          <span className="text-[10px] text-[#4a5a78]">P99</span>
+        <div className="flex flex-col items-start font-bold">
+          <span className="text-[10px] tracking-widest uppercase text-[#555555]">P99</span>
           <span className={getLatencyColor(stats.p99)}>{stats.p99.toFixed(1)}ms</span>
         </div>
       </div>
-    </div>
+    </GlassPanel>
   );
 }

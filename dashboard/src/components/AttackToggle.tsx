@@ -1,7 +1,16 @@
 'use client';
+
 import { useState } from 'react';
 import { api } from '@/lib/api';
 import { Target, Zap, Clock } from 'lucide-react';
+import { GlassPanel, Badge } from './ui/primitives';
+import { motion } from 'framer-motion';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 const SCENARIOS = [
   { id: 'exfil_low_slow', name: 'Low-and-Slow Exfiltration', target: 'alex.chen', desc: 'Gradual small file downloads over time' },
@@ -14,6 +23,7 @@ const SCENARIOS = [
 export function AttackToggle() {
   const [activeScenarios, setActiveScenarios] = useState<Set<string>>(new Set());
   const [timeScale, setTimeScale] = useState(1);
+  const isAttacking = activeScenarios.size > 0;
 
   const toggleScenario = async (id: string) => {
     try {
@@ -37,58 +47,79 @@ export function AttackToggle() {
   };
 
   return (
-    <div className="glass-card rounded-xl flex flex-col h-full">
-      <div className="p-3 border-b border-[#ff3366]/20 flex items-center gap-2 bg-[#ff3366]/5">
+    <GlassPanel className={cn("flex flex-col h-full", isAttacking && "border-[#ff3366] shadow-[0_0_15px_rgba(255,51,102,0.15)]")}>
+      <div className="p-3 border-b border-[#222] flex items-center gap-2 bg-[#0a0a0a]">
         <Target className="w-5 h-5 text-[#ff3366]" />
-        <h2 className="font-bold tracking-widest text-sm text-[#e8edf5]">ATTACK SIMULATION CONTROL</h2>
+        <h2 className="font-bold tracking-widest text-[10px] uppercase text-[#ffffff]">Attack Simulation Control</h2>
       </div>
 
-      <div className="p-3 flex-1 flex flex-col gap-2 overflow-y-auto">
+      <div className="p-3 flex-1 flex flex-col gap-2 overflow-y-auto bg-[#050505]">
         {SCENARIOS.map(scenario => {
           const isActive = activeScenarios.has(scenario.id);
           return (
             <div 
               key={scenario.id}
-              className={`p-3 rounded-lg border transition-all ${isActive ? 'bg-[#ff3366]/10 border-[#ff3366]/50 shadow-[0_0_15px_rgba(255,51,102,0.15)]' : 'bg-black/30 border-[#64b4ff]/10 hover:border-[#64b4ff]/30'}`}
+              className={cn(
+                "p-3 rounded-xl border backdrop-blur-xl transition-all",
+                isActive 
+                  ? 'bg-[#0a0a0a]/85 border-[#ff3366] shadow-[0_0_15px_rgba(255,51,102,0.15)]' 
+                  : 'bg-[#0a0a0a]/85 border-[#222] hover:border-[#333]'
+              )}
             >
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <h3 className={`font-bold text-sm ${isActive ? 'text-[#ff3366]' : 'text-white'}`}>{scenario.name}</h3>
+                  <h3 className={cn("font-bold text-sm", isActive ? 'text-[#ff3366]' : 'text-[#ffffff]')}>{scenario.name}</h3>
                   {isActive && <span className="flex w-2 h-2 bg-[#ff3366] rounded-full animate-ping" />}
                 </div>
                 <button 
                   onClick={() => toggleScenario(scenario.id)}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${isActive ? 'bg-[#ff3366]' : 'bg-[#4a5a78]'}`}
+                  className={cn(
+                    "relative inline-flex h-5 w-9 items-center rounded-full transition-colors border",
+                    isActive ? 'bg-[#ff3366]/20 border-[#ff3366]' : 'bg-[#000000] border-[#333]'
+                  )}
                 >
-                  <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${isActive ? 'translate-x-5' : 'translate-x-1'}`} />
+                  <motion.span
+                    layout
+                    className={cn(
+                      "inline-block h-3 w-3 transform rounded-full handle",
+                      isActive ? "bg-[#ff3366] ml-5" : "bg-[#555555] ml-1"
+                    )}
+                  />
                 </button>
               </div>
-              <div className="flex items-center justify-between text-xs text-[#7a8ba8]">
+              <div className="flex items-center justify-between text-[10px] text-[#888888]">
                 <span>{scenario.desc}</span>
-                <span className="font-mono bg-white/5 px-1.5 py-0.5 rounded">{scenario.target}</span>
+                <Badge variant="neutral">{scenario.target}</Badge>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className="p-3 border-t border-[#64b4ff]/10 bg-black/20 flex flex-col gap-2">
-        <div className="flex items-center gap-2 text-[#7a8ba8] text-xs font-bold uppercase tracking-wider">
+      <div className="p-3 border-t border-[#222] bg-[#0a0a0a] flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-[#555555] text-[10px] font-bold uppercase tracking-widest">
           <Clock className="w-3 h-3" />
           Time Scale Multiplier
         </div>
         <div className="flex gap-2">
           {[1, 2, 5, 10].map(scale => (
-            <button
+            <motion.button
               key={scale}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => updateScale(scale)}
-              className={`flex-1 py-1.5 rounded text-sm font-jetbrains font-bold transition-colors border ${timeScale === scale ? 'bg-[#3388ff]/20 text-[#3388ff] border-[#3388ff]/50' : 'bg-black/40 text-[#7a8ba8] border-[#4a5a78]/30 hover:bg-white/5'}`}
+              className={cn(
+                "flex-1 py-1.5 rounded-xl text-sm font-mono font-bold transition-all border backdrop-blur-xl",
+                timeScale === scale 
+                  ? 'bg-[#00e5ff]/10 text-[#00e5ff] border-[#00e5ff]/50 shadow-[0_0_10px_rgba(0,229,255,0.2)]' 
+                  : 'bg-[#0a0a0a]/85 text-[#888888] border-[#222] hover:bg-[#222]/50'
+              )}
             >
               {scale}x
-            </button>
+            </motion.button>
           ))}
         </div>
       </div>
-    </div>
+    </GlassPanel>
   );
 }

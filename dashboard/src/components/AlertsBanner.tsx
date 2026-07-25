@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Alert, UserRiskState } from '@/types/events';
 import { api } from '@/lib/api';
 import { BellRing, AlertTriangle, Info, Shield, Key, Flag, Lock, Loader2, CheckCircle2, ChevronRight } from 'lucide-react';
+import { GlassPanel, Badge } from './ui/primitives';
+import { motion } from 'framer-motion';
 
 const SEVERITY_ICONS: Record<string, typeof AlertTriangle> = {
   CRITICAL: AlertTriangle,
@@ -11,32 +13,22 @@ const SEVERITY_ICONS: Record<string, typeof AlertTriangle> = {
   LOW: Info,
 };
 
-// Sleek UN-RED cyberpunk neon aesthetics with rich cyan, amber, sapphire and emerald highlights
-const SEVERITY_STYLES: Record<string, { card: string; text: string; badge: string; glow: string }> = {
-  CRITICAL: {
-    card: 'bg-[#09152e]/95 border-[#00e5ff]/50 text-[#e6f7ff] shadow-[0_0_18px_rgba(0,229,255,0.2)] hover:border-[#00ff88]/60 hover:bg-[#0c1e40]',
-    text: 'text-[#00e5ff]',
-    badge: 'bg-[#00e5ff]/20 text-[#00e5ff] border-[#00e5ff]/40',
-    glow: 'shadow-[0_0_12px_rgba(0,229,255,0.4)]',
-  },
-  HIGH: {
-    card: 'bg-[#0d182e]/95 border-[#ffb300]/50 text-[#fff7e6] shadow-[0_0_15px_rgba(255,179,0,0.18)] hover:border-[#ffb300]/80 hover:bg-[#11203d]',
-    text: 'text-[#ffb300]',
-    badge: 'bg-[#ffb300]/20 text-[#ffb300] border-[#ffb300]/40',
-    glow: 'shadow-[0_0_12px_rgba(255,179,0,0.4)]',
-  },
-  MEDIUM: {
-    card: 'bg-[#0a1830]/95 border-[#00ff88]/40 text-[#e6fff5] hover:border-[#00ff88]/70 hover:bg-[#0d2140]',
-    text: 'text-[#00ff88]',
-    badge: 'bg-[#00ff88]/20 text-[#00ff88] border-[#00ff88]/40',
-    glow: 'shadow-[0_0_12px_rgba(0,255,136,0.3)]',
-  },
-  LOW: {
-    card: 'bg-[#071428]/95 border-[#3388ff]/40 text-[#e6f0ff] hover:border-[#3388ff]/70 hover:bg-[#0a1b38]',
-    text: 'text-[#3388ff]',
-    badge: 'bg-[#3388ff]/20 text-[#3388ff] border-[#3388ff]/40',
-    glow: 'shadow-[0_0_12px_rgba(51,136,255,0.3)]',
-  },
+const getSeverityVariant = (severity: string) => {
+  switch (severity) {
+    case 'CRITICAL': return 'crimson';
+    case 'HIGH': return 'amber';
+    case 'MEDIUM': return 'emerald';
+    default: return 'cyan';
+  }
+};
+
+const getSeverityBorderColor = (severity: string) => {
+  switch (severity) {
+    case 'CRITICAL': return '#ff3366';
+    case 'HIGH': return '#ffaa00';
+    case 'MEDIUM': return '#00ff88';
+    default: return '#00e5ff';
+  }
 };
 
 interface AlertsBannerProps {
@@ -110,82 +102,94 @@ export function AlertsBanner({ alerts, riskUpdates, onSelectUser }: AlertsBanner
   };
 
   const getActionConfig = (msg: string) => {
-    if (msg.includes('REVOKE_SESSION')) return { name: 'REVOKE SESSION', icon: Key, color: 'border-[#ffaa00]/60 text-[#ffb300] bg-[#ffb300]/10 hover:bg-[#ffb300]/20' };
-    if (msg.includes('FLAG_AUDIT')) return { name: 'FLAG FOR AUDIT', icon: Flag, color: 'border-[#00e5ff]/60 text-[#00e5ff] bg-[#00e5ff]/10 hover:bg-[#00e5ff]/20' };
-    if (msg.includes('STEP_UP_AUTH')) return { name: 'STEP-UP AUTH', icon: Lock, color: 'border-[#3388ff]/60 text-[#3388ff] bg-[#3388ff]/10 hover:bg-[#3388ff]/20' };
-    return { name: 'ISOLATE ACCOUNT', icon: Shield, color: 'border-[#00ff88]/60 text-[#00ff88] bg-[#00ff88]/10 hover:bg-[#00ff88]/20' };
+    if (msg.includes('REVOKE_SESSION')) return { name: 'REVOKE SESSION', icon: Key, color: 'border-[#ffaa00]/60 text-[#ffb300] bg-[#ffb300]/10 hover:bg-[#ffb300]/20 hover:shadow-[0_0_10px_rgba(255,170,0,0.3)]' };
+    if (msg.includes('FLAG_AUDIT')) return { name: 'FLAG FOR AUDIT', icon: Flag, color: 'border-[#00e5ff]/60 text-[#00e5ff] bg-[#00e5ff]/10 hover:bg-[#00e5ff]/20 hover:shadow-[0_0_10px_rgba(0,229,255,0.3)]' };
+    if (msg.includes('STEP_UP_AUTH')) return { name: 'STEP-UP AUTH', icon: Lock, color: 'border-[#3388ff]/60 text-[#3388ff] bg-[#3388ff]/10 hover:bg-[#3388ff]/20 hover:shadow-[0_0_10px_rgba(51,136,255,0.3)]' };
+    return { name: 'ISOLATE ACCOUNT', icon: Shield, color: 'border-[#00ff88]/60 text-[#00ff88] bg-[#00ff88]/10 hover:bg-[#00ff88]/20 hover:shadow-[0_0_10px_rgba(0,255,136,0.3)]' };
   };
 
   return (
-    <div className="flex flex-col gap-2 shrink-0 max-h-48 overflow-y-auto pr-1">
+    <div className="flex flex-col gap-2 w-full max-w-4xl mx-auto mt-4">
       {recent.map((alert, idx) => {
         const Icon = SEVERITY_ICONS[alert.severity] || Info;
-        const style = SEVERITY_STYLES[alert.severity] || SEVERITY_STYLES.LOW;
         const actionConfig = getActionConfig(alert.message);
         const ActionIcon = actionConfig.icon;
         const isExecuting = loadingAlertId === alert.id;
         const executedAction = executedAlertIds[alert.id];
+        const borderColor = getSeverityBorderColor(alert.severity);
 
         return (
-          <div
+          <motion.div
             key={alert.id}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: idx * 0.05 }}
             onClick={() => handleRowClick(alert.message)}
-            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-300 cursor-pointer group ${style.card}`}
-            style={{ animationDelay: `${idx * 50}ms` }}
             title="Click row to open User Deep Dive & Risk Vectors"
+            className="cursor-pointer group"
           >
-            {/* Severity Badge */}
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono font-bold border ${style.badge} ${style.glow}`}>
-              <Icon className="w-3.5 h-3.5 shrink-0" />
-              <span>{alert.severity}</span>
-            </div>
-
-            {/* Alert Content */}
-            <span className="text-sm flex-1 font-semibold tracking-wide truncate group-hover:text-white transition-colors">
-              {alert.message}
-            </span>
-
-            {/* Scenario Tag */}
-            {alert.scenario_id && (
-              <span className="text-[11px] font-mono font-bold bg-[#00e5ff]/15 text-[#00e5ff] px-2.5 py-0.5 rounded-full border border-[#00e5ff]/30">
-                {alert.scenario_id}
-              </span>
-            )}
-
-            {/* Interactive SOAR Execution Button directly on Alert */}
-            <button
-              onClick={(e) => handleExecuteSoar(e, alert.id, alert.message)}
-              disabled={!!isExecuting || !!executedAction}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono font-bold text-xs transition-all duration-200 shadow-md ${
-                executedAction
-                  ? 'bg-[#00ff88]/20 border-[#00ff88] text-[#00ff88] shadow-[0_0_15px_rgba(0,255,136,0.3)]'
-                  : actionConfig.color
-              }`}
+            <GlassPanel 
+              className="p-3 flex items-center justify-between border-l-4 hover:bg-white/5 transition-colors"
+              style={{ borderLeftColor: borderColor }}
             >
-              {isExecuting ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>EXECUTING...</span>
-                </>
-              ) : executedAction ? (
-                <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#00ff88]" />
-                  <span>✓ EXECUTED ({executedAction})</span>
-                </>
-              ) : (
-                <>
-                  <ActionIcon className="w-3.5 h-3.5" />
-                  <span>⚡ EXECUTE {actionConfig.name}</span>
-                </>
-              )}
-            </button>
+              <div className="flex items-center gap-3 overflow-hidden flex-1 pr-4">
+                {/* Severity Badge */}
+                <Badge variant={getSeverityVariant(alert.severity) as any}>
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  <span>{alert.severity}</span>
+                </Badge>
 
-            {/* Inspect Arrow */}
-            <div className="flex items-center gap-1 text-[#7a8ba8] group-hover:text-[#00e5ff] transition-colors text-xs font-mono pl-1 border-l border-white/10">
-              <span>INSPECT</span>
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </div>
-          </div>
+                {/* Alert Content */}
+                <span className="text-sm font-semibold tracking-wide truncate group-hover:text-white transition-colors text-gray-300">
+                  {alert.message}
+                </span>
+
+                {/* Scenario Tag */}
+                {alert.scenario_id && (
+                  <span className="text-[11px] font-mono font-bold bg-[#00e5ff]/15 text-[#00e5ff] px-2.5 py-0.5 rounded-full border border-[#00e5ff]/30 shrink-0">
+                    {alert.scenario_id}
+                  </span>
+                )}
+              </div>
+
+              {/* Actions & Inspect Arrow */}
+              <div className="flex items-center gap-3 shrink-0">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={(e: any) => handleExecuteSoar(e, alert.id, alert.message)}
+                  disabled={!!isExecuting || !!executedAction}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono font-bold text-xs transition-all duration-200 shadow-md ${
+                    executedAction
+                      ? 'bg-[#00ff88]/20 border-[#00ff88] text-[#00ff88] shadow-[0_0_15px_rgba(0,255,136,0.3)]'
+                      : actionConfig.color
+                  }`}
+                >
+                  {isExecuting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>EXECUTING...</span>
+                    </>
+                  ) : executedAction ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#00ff88]" />
+                      <span>✓ EXECUTED ({executedAction})</span>
+                    </>
+                  ) : (
+                    <>
+                      <ActionIcon className="w-3.5 h-3.5" />
+                      <span>⚡ EXECUTE {actionConfig.name}</span>
+                    </>
+                  )}
+                </motion.button>
+
+                <div className="flex items-center gap-1 text-[#7a8ba8] group-hover:text-[#00e5ff] transition-colors text-xs font-mono pl-1 border-l border-white/10">
+                  <span>INSPECT</span>
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </div>
+            </GlassPanel>
+          </motion.div>
         );
       })}
     </div>
